@@ -36,28 +36,37 @@ namespace ImageResizer
         /// <param name="sourcePath">圖片來源目錄路徑</param>
         /// <param name="destPath">產生圖片目的目錄路徑</param>
         /// <param name="scale">縮放比例</param>
-        /// 1240ms
-        public void ResizeImages(string sourcePath, string destPath, double scale)
+        /// 1280ms
+        public async Task ResizeImages(string sourcePath, string destPath, double scale)
         {
             var allFiles = FindImages(sourcePath);
+            
+            var tasks = new List<Task>();
 
-            Parallel.ForEach(allFiles, filePath =>
+            foreach (var filePath in allFiles)
             {
-                var imgPhoto = Image.FromFile(filePath);
-                var imgName = Path.GetFileNameWithoutExtension(filePath);
+                var task = Task.Run(() =>
+                {
+                    var imgPhoto = Image.FromFile(filePath);
+                    var imgName = Path.GetFileNameWithoutExtension(filePath);
 
-                var sourceWidth = imgPhoto.Width;
-                var sourceHeight = imgPhoto.Height;
+                    var sourceWidth = imgPhoto.Width;
+                    var sourceHeight = imgPhoto.Height;
 
-                var destionatonWidth = (int) (sourceWidth * scale);
-                var destionatonHeight = (int) (sourceHeight * scale);
+                    var destionatonWidth = (int) (sourceWidth * scale);
+                    var destionatonHeight = (int) (sourceHeight * scale);
 
-                var processedImage = processBitmap((Bitmap) imgPhoto,
-                                                   sourceWidth, sourceHeight,
-                                                   destionatonWidth, destionatonHeight);
+                    var processedImage = processBitmap((Bitmap) imgPhoto,
+                                                       sourceWidth, sourceHeight,
+                                                       destionatonWidth, destionatonHeight);
 
-                processedImage.Save(Path.Combine(destPath, imgName + ".jpg"), ImageFormat.Jpeg);
-            });
+                    processedImage.Save(Path.Combine(destPath, imgName + ".jpg"), ImageFormat.Jpeg);
+                });
+
+                tasks.Add(task);
+            }
+            
+            await Task.WhenAll(tasks);
         }
 
         /// <summary>
