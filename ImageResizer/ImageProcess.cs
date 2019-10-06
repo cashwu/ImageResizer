@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -38,7 +39,7 @@ namespace ImageResizer
         /// <param name="destPath">產生圖片目的目錄路徑</param>
         /// <param name="scale">縮放比例</param>
         /// 1280ms
-        public async Task ResizeImagesAsync(string sourcePath, string destPath, double scale, CancellationToken token)
+        public async Task ResizeImagesAsync(string sourcePath, string destPath, double scale, CancellationToken token = default)
         {
             var allFiles = FindImages(sourcePath);
 
@@ -61,14 +62,25 @@ namespace ImageResizer
                                                        sourceWidth, sourceHeight,
                                                        destionatonWidth, destionatonHeight);
 
-                    token.ThrowIfCancellationRequested();
+                    if (token.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
                     processedImage.Save(Path.Combine(destPath, imgName + ".jpg"), ImageFormat.Jpeg);
-                });
+                }, token);
 
                 tasks.Add(task);
             }
 
-            await Task.WhenAll(tasks);
+            try
+            {
+                await Task.WhenAll(tasks);
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine($"{Environment.NewLine}已經取消");
+            }
         }
 
         /// <summary>
@@ -84,6 +96,29 @@ namespace ImageResizer
             files.AddRange(Directory.GetFiles(srcPath, "*.jpeg", SearchOption.AllDirectories));
 
             return files;
+        }
+
+        public void ResizeImages(string sourcePath, string destPath, double scale)
+        {
+            var allFiles = FindImages(sourcePath);
+
+            foreach (var filePath in allFiles)
+            {
+                var imgPhoto = Image.FromFile(filePath);
+                var imgName = Path.GetFileNameWithoutExtension(filePath);
+
+                var sourceWidth = imgPhoto.Width;
+                var sourceHeight = imgPhoto.Height;
+
+                var destionatonWidth = (int) (sourceWidth * scale);
+                var destionatonHeight = (int) (sourceHeight * scale);
+
+                var processedImage = processBitmap((Bitmap) imgPhoto,
+                                                   sourceWidth, sourceHeight,
+                                                   destionatonWidth, destionatonHeight);
+
+                processedImage.Save(Path.Combine(destPath, imgName + ".jpg"), ImageFormat.Jpeg);
+            }
         }
 
         /// <summary>

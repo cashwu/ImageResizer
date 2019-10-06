@@ -16,8 +16,7 @@ namespace ImageResizer
             string destinationPath = Path.Combine(Environment.CurrentDirectory, "output");
 
             var cts = new CancellationTokenSource();
-            cts.CancelAfter(300);
-
+            
             #region 等候使用者輸入 取消 c 按鍵
 
             ThreadPool.QueueUserWorkItem(x =>
@@ -37,14 +36,11 @@ namespace ImageResizer
             Stopwatch sw = new Stopwatch();
             sw.Start();
 
-            try
-            {
-                await imageProcess.ResizeImagesAsync(sourcePath, destinationPath, 2.0d, cts.Token);
-            }
-            catch (OperationCanceledException)
-            {
-                Console.WriteLine($"{Environment.NewLine}已經取消");
-            }
+//            imageProcess.ResizeImages(sourcePath, destinationPath, 2.0d);
+//            await imageProcess.ResizeImagesAsync(sourcePath, destinationPath, 2.0d, CancellationToken.None);
+
+            await imageProcess.ResizeImagesAsync(sourcePath, destinationPath, 2.0d, cts.Token);
+
             sw.Stop();
 
             Console.WriteLine($"花費時間: {sw.ElapsedMilliseconds} ms");
